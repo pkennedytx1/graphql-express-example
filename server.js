@@ -1,21 +1,31 @@
-var express = require('express');
-var express_graphql = require('express-graphql').graphqlHTTP
-var { buildSchema } = require('graphql');
+const express = require('express');
+const express_graphql = require('express-graphql').graphqlHTTP
+const { buildSchema } = require('graphql');
 
 // GraphQL schema
-var schema = buildSchema(`
+const schema = buildSchema(`
     type Query {
         roaster(id: Int!): Roaster
         roastersByLocation(location: String): [Roaster]
+    },
+    type Mutation {
+        createRoaster(input: CreateRoasterInput): Roaster
     },
     type Roaster {
         id: Int
         name: String
         location: String
         url: String
+    },
+    input CreateRoasterInput {
+        id: Int!,
+        name: String!,
+        location: String!,
+        url: String!,
     }
 `);
 
+// Mock data base data
 const roasterData = [
     {
         id: 1,
@@ -46,24 +56,34 @@ const roasterData = [
 // Service (this is what would access the db and do the correct query)
 const getRoaster = function(args) { 
     var id = args.id;
-    return roasterData.filter(course => {
-        return course.id == id;
+    return roasterData.filter(roaster => {
+        return roaster.id === id;
     })[0];
 };
 
 const getRoasters = function(args) {
     if (args.location) {
         var location = args.location;
-        return roasterData.filter(course => course.location === location);
+        return roasterData.filter(roaster => roaster.location === location);
     } else {
         return roasterData;
     }
 };
 
+const createRoaster = function(input) {
+    const { id, name, location, url } = input.input;
+    roasterData.push({ id, name, location, url})
+    console.log(roasterData)
+    return roasterData.filter(roaster => {
+        return roaster.id === id;
+    })[0];
+}
+
 // attaching the schema
 const root = {
     roaster: getRoaster,
     roastersByLocation: getRoasters,
+    createRoaster: createRoaster,
 };
 
 // Create an express server and a GraphQL endpoint
